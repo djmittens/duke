@@ -49,7 +49,7 @@ class SwingWindow() extends MainWindow[Future] {
         } while (running)
 
       } catch {
-        case ex => println(ex)
+        case ex: Exception => println(ex)
       }
     }
   }
@@ -107,22 +107,22 @@ class SwingWindow() extends MainWindow[Future] {
 
 }
 
-object TUIRun {
-  def main(args: Array[String]): Unit = {
-    println("Hello World !!!")
+// object TUIRun {
+//   def main(args: Array[String]): Unit = {
+//     println("Hello World !!!")
 
-    val window = new SwingWindow()
-    val SCREEN_WIDTH = 400
-    window.start()
-    window.paint { x =>
-      for (i <- (0 to 10)) {
-        for (j <- (0 to 20)) {
-          x((i * SCREEN_WIDTH) + j) = -1
-        }
-      }
-    }
+//     val window = new SwingWindow()
+//     val SCREEN_WIDTH = 400
+//     window.start()
+//     window.paint { x =>
+//       for (i <- (0 to 10)) {
+//         for (j <- (0 to 20)) {
+//           x((i * SCREEN_WIDTH) + j) = -1
+//         }
+//       }
+//     }
 
-    window.join()
-    window.close()
-  }
-}
+//     window.join()
+//     window.close()
+//   }
+// }
