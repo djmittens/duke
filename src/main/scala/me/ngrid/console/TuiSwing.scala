@@ -1,15 +1,8 @@
 package me.ngrid.console
-import java.awt.Dimension
+import java.awt._
+import java.util.concurrent.ConcurrentLinkedQueue
 
 import javax.swing._
-import java.awt.GridBagLayout
-import java.awt.GridBagConstraints
-import java.awt.Rectangle
-import java.awt.Color
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.awt.Graphics
-import java.awt.Graphics2D
-import java.awt.RenderingHints
 
 class TuiSwing {
   val jframe = new JFrame {
@@ -69,9 +62,9 @@ class TuiSwing {
 
     mainBox.add(console)
 
-    toolbar.setMaximumSize(new Dimension(300, Short.MaxValue))
-    toolbar.setMinimumSize(new Dimension(300, 120))
-    toolbar.setPreferredSize(new Dimension(300, 120))
+    toolbar.setMaximumSize(new Dimension(250, Short.MaxValue))
+    toolbar.setMinimumSize(new Dimension(250, 120))
+    toolbar.setPreferredSize(new Dimension(250, 120))
 
     mainBox.add(toolbar)
 
@@ -88,15 +81,13 @@ class TuiSwing {
 
   jframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
   jframe.setVisible(true)
-//   observer = this.appendText
   updateLoop.start()
 
   val simpleAttributes = {
     val attr = new text.SimpleAttributeSet()
-    text.StyleConstants.setFontFamily(attr, "Courier New bold")
+    text.StyleConstants.setFontFamily(attr, "Courier New")
     text.StyleConstants.setBackground(attr, Color.white)
     text.StyleConstants.setFontSize(attr, 14)
-    text.StyleConstants.setBold(attr, true)
     attr
   }
 
