@@ -1,4 +1,4 @@
-package me.ngrid.console
+package me.ngrid.duke.console
 import java.awt._
 import java.util.concurrent.ConcurrentLinkedQueue
 

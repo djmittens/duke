@@ -1,4 +1,4 @@
-package me.ngrid.console.me.ngrid.duke.protocol
+package me.ngrid.duke.protocol
 
 import java.util.UUID
 
