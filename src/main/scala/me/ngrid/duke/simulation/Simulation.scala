@@ -5,7 +5,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import me.ngrid.duke.protocol.Event
 
 
-class Simulation(systems: Seq[Simulation.System[_]]) {
+// I am going to put a pin on this thing for now, as i realized that i have never made an actual cellular automata.
+class Simulation(systems: Seq[_]) {
   import Simulation._
 
   var running = true
@@ -19,14 +20,15 @@ class Simulation(systems: Seq[Simulation.System[_]]) {
 
   val state: State = Map.empty
 
-  val loop: Thread = {() =>
-    while (running) {
-      val (cref, cmd) = workBuffer.poll()
-      state.foreach {case (eid, comp) =>
-        systems.foreach { _.apply (eid, cmd, comp)}
-      }
-    }
-  }
+//  val loop: Thread = {() =>
+//    while (running) {
+//      val (cref, cmd) = workBuffer.poll()
+//      state.foreach {case (eid, comp) =>
+////        systems.foreach {_ (eid, cmd, comp)}
+//        ???
+//      }
+//    }
+//  }
 
   /*
   Each system gets its own command buffer.
@@ -56,10 +58,10 @@ object Simulation {
   type ComponentStates = Map[Component, UnknownState]
   type State = Map[EntityId, ComponentStates]
 
-  type System[Command] = {
-    // Is this a good idea?
-    def apply(e: EntityId, v: Command, c: ComponentStates): (ErrOut, StdOut)
-  }
+//  type System[Command] = {
+//    // Is this a good idea?
+//    def apply(e: EntityId, v: Command, c: ComponentStates): (ErrOut, StdOut)
+//  }
 
   sealed trait Command extends Serializable with Product
   object Command {
@@ -74,6 +76,5 @@ object Simulation {
 
 object SimulationRun {
   def main(args: Array[String]): Unit = {
-
   }
 }

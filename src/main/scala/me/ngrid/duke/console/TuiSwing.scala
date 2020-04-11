@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.swing._
 
 class TuiSwing {
-  val jframe = new JFrame {
-    override def getPreferredSize(): Dimension = new Dimension(400, 400)
+  val jframe: JFrame = new JFrame {
+    override def getPreferredSize: Dimension = new Dimension(400, 400)
   }
   val jfield = new JTextField()
   jfield.setBounds(50, 50, 150, 20)
@@ -15,7 +15,7 @@ class TuiSwing {
 
   val toolbar = new JPanel()
 
-  val jtpane = new JTextPane() {
+  val jtpane: JTextPane = new JTextPane() {
       // Turn on antialiasing for the font
       override def paintComponent(x: Graphics): Unit = {
           val g = x.asInstanceOf[Graphics2D]
@@ -31,15 +31,15 @@ class TuiSwing {
 
   val updateLoop = new Timer(17, { _ =>
     var batch = 100
-    while (!workQueue.isEmpty() && batch > 0) {
+    while (!workQueue.isEmpty && batch > 0) {
       workQueue.poll() match {
         case TuiSwing.NewText(txt, attr) =>
-          val doc = jtpane.getDocument()
+          val doc = jtpane.getDocument
           // this little bit is able to delete the top of the screen
           //   doc.remove(0, doc.getLength())
           doc.insertString(doc.getLength, txt, attr)
           // scrolls down
-          val r = jtpane.modelToView2D(doc.getLength()).asInstanceOf[Rectangle]
+          val r = jtpane.modelToView2D(doc.getLength).asInstanceOf[Rectangle]
           if (r != null) jtpane.scrollRectToVisible(r)
       }
     }
@@ -83,7 +83,7 @@ class TuiSwing {
   jframe.setVisible(true)
   updateLoop.start()
 
-  val simpleAttributes = {
+  private[this] val simpleAttributes = {
     val attr = new text.SimpleAttributeSet()
     text.StyleConstants.setFontFamily(attr, "Courier New")
     text.StyleConstants.setBackground(attr, Color.white)
@@ -91,7 +91,7 @@ class TuiSwing {
     attr
   }
 
-  val systemMessage = simpleAttributes.clone()
+  private[this] val systemMessage = simpleAttributes.clone()
   def appendText(txt: String): Unit =
     workQueue.offer(TuiSwing.NewText(txt, simpleAttributes))
 }
