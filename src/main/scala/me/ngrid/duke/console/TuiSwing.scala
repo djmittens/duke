@@ -107,9 +107,4 @@ object TuiSwing {
   }
 }
 
-object TuiSwingRun {
-  def main(args: Array[String]): Unit = {
-    val tui = new TuiSwing()
-    tui.observer = x => tui.appendText(x + "\n")
-  }
-}
+

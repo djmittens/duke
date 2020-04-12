@@ -3,10 +3,10 @@ package me.ngrid.duke.simulation.ca
 import me.ngrid.duke.simulation.ca.CellularAutomaton.Neighborhood
 import me.ngrid.duke.util.{NArray, Show}
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
-final class CellularAutomaton[D <: Int, Cell: ClassTag] private (private val cells: Array[Cell], dim: Int)  (implicit s: ValueOf[D]) {
-  val numCells = 64
+final class CellularAutomaton[D <: Int, Cell: ClassTag] private(val cells: Array[Cell], length: Int, dim: Int)(implicit s: ValueOf[D]) {
   private[this] val hoods = {
     Array.tabulate(cells.length){ i =>
       neighbors(i, 0, cells.length, dim)
@@ -14,20 +14,24 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private (private val cel
   }
 
   private[this] def neighbors(v: Int, start: Int,  len: Int, dim: Int): Array[Int]= {
-    val blockSize = len / numCells
+    val blockSize = len / length
     if (dim == 1) {
-      Array(loopAround(v-1, numCells), v, loopAround(v+1, numCells))
+      Array(loopAround(v-1, length), v, loopAround(v+1, length))
     } else {
       // cells ( xDIM * size ^ DIM  + xDIM-1 * size ^ DIM-1 .... + x0)
       // v = (xDIM * size ^ DIM) + (xDIM-1 * size ^ DIM-1 .... + x0)
       val block = v / blockSize
       val offset = v % blockSize
 
-      val left = neighbors(offset, start + (loopAround(block - 1, numCells) * blockSize), blockSize, dim - 1)
+      val left = neighbors(offset, start + (loopAround(block - 1, length) * blockSize), blockSize, dim - 1)
       val self = neighbors(offset, start + (block * blockSize), blockSize, dim - 1)
-      val right = neighbors(offset, start + (loopAround(block + 1, numCells) * blockSize), blockSize, dim - 1)
+      val right = neighbors(offset, start + (loopAround(block + 1, length) * blockSize), blockSize, dim - 1)
 
-      left ++ self ++ right
+      val buf = mutable.ArrayBuilder.make[Int]
+      buf.addAll(left)
+      buf.addAll(self)
+      buf.addAll(right)
+      buf.result()
     }
   }
 
@@ -36,7 +40,7 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private (private val cel
 
     for(d <- cells.indices) {next(d) = f(neighbors(d))}
 
-    new CellularAutomaton(next, dim)
+    new CellularAutomaton(next, length, dim)
   }
 
   def neighbors(v: Int):Neighborhood[D, Cell] =
@@ -52,7 +56,7 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private (private val cel
 object CellularAutomaton {
 
   def x1D[Cell : ClassTag](init: Array[Cell]): CellularAutomaton[3, Cell] = {
-    new CellularAutomaton(init, 1)
+    new CellularAutomaton(init, init.length, 1)
   }
 
   implicit def show[D <: Int, Cell](implicit s: Show[Cell]): Show[CellularAutomaton[D, Cell]] = (v: CellularAutomaton[D, Cell]) => {
