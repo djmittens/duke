@@ -2,13 +2,15 @@ package example
 
 import java.awt.image.{BufferedImage, DataBufferInt}
 import java.awt.{Canvas, Color, Dimension}
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 
 import javax.swing.{JFrame, Timer, WindowConstants}
 import me.ngrid.duke.simulation.Simulation
 import me.ngrid.duke.simulation.ca.{CellularAutomaton, WolframCode}
 
-import scala.util.Random
+import scala.io.StdIn
+import scala.util.{Random, Try}
 
 class WolframSwing(dim: Int, code: Int) {
   val jframe: JFrame = new JFrame() {
@@ -23,13 +25,21 @@ class WolframSwing(dim: Int, code: Int) {
   }
 
   object sim {
+    val workQueue = new ConcurrentLinkedDeque[Int]()
     val init: Array[Boolean] = Array.ofDim[Boolean](dim)
     // seed this mofo
     init(init.length / 2) = true
     val game = new Simulation(CellularAutomaton.x1D(init))
     var wc = new WolframCode(code)
 
-    def tick(): Unit = game.advance { ca => ca.update(wc) }
+    def tick(): Unit = game.advance { ca =>
+      if (!workQueue.isEmpty) {
+        val newcode = workQueue.poll()
+        sim.wc = new WolframCode(newcode)
+        jframe.setTitle(s"Wolfram Code ##${newcode}##")
+      }
+      ca.update(wc)
+    }
 
     def readState(f: Array[Boolean] => Unit): Unit = {
       game.query(f0 => f(f0.cells))
@@ -52,30 +62,28 @@ class WolframSwing(dim: Int, code: Int) {
         canvas.getBufferStrategy
       } else b
     }
-    bs.getDrawGraphics.drawImage(img, 0, 0, canvas.getWidth, canvas.getHeight,  null)
+    bs.getDrawGraphics
+      .drawImage(img, 0, 0, canvas.getWidth, canvas.getHeight, null)
     bs.show()
   })
 
   val simLoop = new Timer(60, { _ =>
     sim.readState { s =>
       // shift every pixel up
-      for(i <- 0 until (dim * (dim - 1))) {
+      for (i <- 0 until (dim * (dim - 1))) {
         pixels(i) = pixels(i + dim)
       }
       // fetch fresh state
       for (i <- (0 until dim).reverse) {
         val x = pixels.length - 1 - i
-        pixels(x) = if(s(i)) Color.GREEN.getRGB else 0
+        pixels(x) = if (s(i)) Color.GREEN.getRGB else 0
       }
     }
     sim.tick()
   })
 
   val codeSwitchLoop = new Timer(1000, { _ =>
-//    val newcode = if(sim.wc.code < 256) sim.wc.code + 1 else 0
-    val newcode = Random.nextInt(256)
-    sim.wc = new WolframCode(newcode)
-    jframe.setTitle(s"Wolfram Code ##${newcode}##")
+    sim.workQueue.offer(Random.nextInt(256))
   })
 
   jframe.setTitle(s"Wolfram Code ##${sim.wc.code}##")
@@ -87,6 +95,14 @@ class WolframSwing(dim: Int, code: Int) {
 
 object WolframSwing {
   def main(args: Array[String]): Unit = {
-    new WolframSwing(128, 161)
+    val wolf = new WolframSwing(128, 105)
+    while (true) {
+      Try {
+        val line = StdIn.readLine()
+        if(line == null) System.exit(0)
+        val code = Integer.parseInt(line)
+        wolf.sim.workQueue.offer(code)
+      }
+    }
   }
 }

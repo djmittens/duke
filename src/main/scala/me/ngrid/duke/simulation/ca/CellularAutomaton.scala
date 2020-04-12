@@ -55,9 +55,11 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private(val cells: Array
 
 object CellularAutomaton {
 
-  def x1D[Cell : ClassTag](init: Array[Cell]): CellularAutomaton[3, Cell] = {
+  def x1D[Cell : ClassTag](init: Array[Cell]): CellularAutomaton[3, Cell] =
     new CellularAutomaton(init, init.length, 1)
-  }
+
+  def x2D[Cell: ClassTag](size: Int, init: Array[Cell]): CellularAutomaton[9, Cell] =
+    new CellularAutomaton(init, size, 1)
 
   implicit def show[D <: Int, Cell](implicit s: Show[Cell]): Show[CellularAutomaton[D, Cell]] = (v: CellularAutomaton[D, Cell]) => {
     val stringBuilder = new StringBuilder

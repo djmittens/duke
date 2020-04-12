@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "Duke",
     fork := true,
+    connectInput in run := true,
     libraryDependencies += scalaTest % Test,
   )
 
