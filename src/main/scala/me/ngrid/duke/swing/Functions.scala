@@ -1,9 +1,11 @@
 package me.ngrid.duke.swing
 
 import java.awt.Dimension
+import java.awt.event.{KeyListener, MouseEvent, MouseListener}
 
+import example.GameOfLifeSwing
 import javax.swing
-import javax.swing.JFrame
+import javax.swing.{JFrame, WindowConstants}
 
 import scala.util.Try
 
@@ -31,9 +33,21 @@ trait Functions {
         }
         super.setVisible(b)
       }
+
+      override def addMouseListener(l: MouseListener): Unit = {
+        super.addMouseListener(l)
+        canvas.addMouseListener(l)
+      }
+
+      override def addKeyListener(l: KeyListener): Unit = {
+        super.addKeyListener(l)
+        canvas.addKeyListener(l)
+      }
     }
 
     jframe.add(canvas)
+
+    jframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
 
     jframe -> canvas.pixels
   }

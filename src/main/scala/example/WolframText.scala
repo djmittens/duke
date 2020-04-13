@@ -18,7 +18,7 @@ object WolframText {
     val wc = new WolframCode(182)
     for (_ <- 0 until 32) {
       game.advance {ca =>
-        ca.update(wc)
+        ca.advanceSate(wc)
       }
 
       game.println()

@@ -11,6 +11,6 @@ case object NArray {
 
   def apply[N <: Int, T : ClassTag](a: Array[T])(implicit v: ValueOf[N]): NArray[N, T] = {
     if(a.length == v.value) {new NArray(a)}
-    else throw new IllegalArgumentException("The array being constructed is not of the correct size.")
+    else throw new IllegalArgumentException(s"The array being constructed(${a.length}) is not of the correct size.(${v.value})")
   }
 }

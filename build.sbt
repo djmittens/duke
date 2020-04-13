@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
     name := "Duke",
     fork := true,
     connectInput in run := true,
+    javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005" ,
     libraryDependencies += scalaTest % Test,
   )
 

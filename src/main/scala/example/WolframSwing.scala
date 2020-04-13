@@ -39,7 +39,7 @@ class WolframSwing(dim: Int, code: Int) {
         else if (cmd == -1) { reset() }
         else if (cmd == -2) { shakeIt() }
       }
-      game.advance { ca => ca.update(wc) }
+      game.advance { ca => ca.advanceSate(wc) }
     }
 
     def draw(): Unit =
@@ -82,7 +82,6 @@ class WolframSwing(dim: Int, code: Int) {
   * -3 Use random code => use a random code
   */
 object WolframSwing {
-
   def main(args: Array[String]): Unit = {
     val wolf = new WolframSwing(256, 105)
     while (true) {
