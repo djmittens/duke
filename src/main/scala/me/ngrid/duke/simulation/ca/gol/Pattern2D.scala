@@ -1,6 +1,6 @@
 package me.ngrid.duke.simulation.ca.gol
 
-final case class Pattern2D[D <: Int](underlying: Array[Boolean])(implicit d: ValueOf[D]) {
+final case class Pattern2D[D <: Int](underlying: Array[Boolean])(implicit d: ValueOf[D]) extends Brush[2]{
   assert(underlying.length == (d.value * d.value))
 
   def apply(x: Int, y: Int, stateDimLength: Int, state: Array[Boolean]): Array[Boolean] = {

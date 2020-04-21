@@ -109,7 +109,8 @@ object GameOfLifeSwing {
   private val paint = """p ([0-9]+) ([0-9]+)""".r
 
   def main(args: Array[String]): Unit = {
-    val game = new GameOfLifeSwing(64)
+//    val game = new GameOfLifeSwing(3840 / 6)
+    val game = new GameOfLifeSwing(1024)
     while (true) Try {
         val input = StdIn.readLine()
         if (input == null) System.exit(0)

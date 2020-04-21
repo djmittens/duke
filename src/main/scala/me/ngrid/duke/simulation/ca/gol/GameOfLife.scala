@@ -1,9 +1,45 @@
 package me.ngrid.duke.simulation.ca.gol
 
 import me.ngrid.duke.simulation.ca.CellularAutomaton.Neighborhood
+import java.util.concurrent.ConcurrentLinkedQueue
+import me.ngrid.duke.simulation.Simulation
+import me.ngrid.duke.simulation.ca.CellularAutomaton
+
+class GameOfLife[N <: Int, T](dim: Int, gol: CellularAutomaton[N, T]) {
+  val workQueue = new ConcurrentLinkedQueue[GameOfLife.Command]()
+
+  val INITIAL_STATE: Array[Boolean] = {
+    Array.ofDim[Boolean](dim * dim)
+  }
+
+  // private[this] var gol = 
+  //   CellularAutomaton.x2D(dim, INITIAL_STATE)
+
+  // def tick(): Unit = {
+  //   var k = 1000
+  //   while (!workQueue.isEmpty && k > 0) {
+  //     val cmd = workQueue.poll()
+  //     cmd match {
+  //       case GameOfLife.Paint(brush ) =>
+  //         gol = gol.augment(k => brush(x, y, dim, k))
+  //     }
+  //     k -= 1
+  //   }
+  //   gol = gol.advanceSate(GameOfLife)
+  // }
+
+}
 
 object GameOfLife extends (Neighborhood[9, Boolean] => Boolean) {
+  sealed trait Command extends Product with Serializable
+  final case class Paint[N <: Int](x: Int, y: Int, brush: Brush[N]) extends Command
+
+
+  // val INITIAL_STATE: Array[Boolean] = {
+  //   Array.ofDim[Boolean](dim * dim)
+  // }
   override def apply(v1: Neighborhood[9, Boolean]): Boolean = {
+
     val self = v1.underlying(9 / 2)
     val popCount = v1.underlying.foldLeft(0)((acc, c) => if(c) acc + 1 else acc)
     if(self) {
