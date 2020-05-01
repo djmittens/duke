@@ -11,7 +11,6 @@ import java.awt.event.{
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import javax.swing.Timer
-import me.ngrid.duke.simulation.Simulation
 import me.ngrid.duke.simulation.ca.CellularAutomaton
 import me.ngrid.duke.simulation.ca.gol.{GameOfLife, Pattern2D}
 import me.ngrid.duke.swing
@@ -22,11 +21,12 @@ import scala.util.Try
 class GameOfLifeSwing(dim: Int) {
   val (jframe, pixels) = swing.simpleScaledBltWindow(dim, dim, 17)
 
-  var brush: Pattern2D[_ <: Int] = Pattern2D.beacon
+  var brush: Pattern2D = Pattern2D.beacon
+
   object sim {
     sealed trait Command extends Product with Serializable
     final case class Paint(x: Int, y: Int) extends Command
-    final case class SetBrush(brush: Pattern2D[_ <: Int]) extends Command
+    final case class SetBrush(brush: Pattern2D) extends Command
 
     val workQueue = new ConcurrentLinkedQueue[Command]()
 
@@ -39,17 +39,14 @@ class GameOfLifeSwing(dim: Int) {
       draw()
     })
 
-    private[this] val gol = new Simulation(
+    private[this] var gol =
       CellularAutomaton.x2D(dim, INITIAL_STATE)
-    )
     private[this] val alg = GameOfLife
 
     def draw(): Unit = {
       val green = Color.GREEN.getRGB
-      gol.query { ca =>
-        for (i <- ca.cells.indices) {
-          pixels(i) = if (ca.cells(i)) green else 0
-        }
+      for (i <- gol.cells.indices) {
+        pixels(i) = if (gol.cells(i)) green else 0
       }
     }
 
@@ -59,15 +56,14 @@ class GameOfLifeSwing(dim: Int) {
         val cmd = workQueue.poll()
         cmd match {
           case Paint(x, y) =>
-            gol.advance(s => s.augment(k => brush(x, y, dim, k)))
+            gol = gol.augment(k => brush(x, y, dim, k))
           case SetBrush(b) =>
             brush = b
         }
         k -= 1
       }
-      gol.advance(s => s.advanceSate(alg))
+      gol = gol.advanceSate(alg)
     }
-
   }
 
   jframe.addMouseListener(listener)
@@ -81,7 +77,7 @@ class GameOfLifeSwing(dim: Int) {
 
     val timer = new Timer(20, { _ =>
       val pos = jframe.getMousePosition()
-      if(pos != null) {
+      if (pos != null) {
         val x: Int = (dim * (pos.getX / jframe.getWidth)).toInt
         val y: Int = (dim * (pos.getY / jframe.getHeight)).toInt
         sim.workQueue.offer(sim.Paint(x, y))
@@ -110,20 +106,21 @@ object GameOfLifeSwing {
 
   def main(args: Array[String]): Unit = {
 //    val game = new GameOfLifeSwing(3840 / 6)
-    val game = new GameOfLifeSwing(1024)
+    // val game = new GameOfLifeSwing(1024)
+    val game = new GameOfLifeSwing(256)
     while (true) Try {
-        val input = StdIn.readLine()
-        if (input == null) System.exit(0)
-        input match {
-          case set_brush(x) =>
-            game.sim.workQueue.offer(
-              game.sim.SetBrush(Pattern2D(x))
-            )
-          case paint(x, y) =>
-            game.sim.workQueue.offer(
-              game.sim.Paint(Integer.parseInt(x), Integer.parseInt(y))
-            )
-        }
+      val input = StdIn.readLine()
+      if (input == null) System.exit(0)
+      input match {
+        case set_brush(x) =>
+          game.sim.workQueue.offer(
+            game.sim.SetBrush(Pattern2D(x))
+          )
+        case paint(x, y) =>
+          game.sim.workQueue.offer(
+            game.sim.Paint(Integer.parseInt(x), Integer.parseInt(y))
+          )
+      }
     }.failed.foreach(e => e.printStackTrace())
   }
 }

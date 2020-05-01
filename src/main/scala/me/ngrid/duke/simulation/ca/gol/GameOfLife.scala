@@ -2,7 +2,6 @@ package me.ngrid.duke.simulation.ca.gol
 
 import me.ngrid.duke.simulation.ca.CellularAutomaton.Neighborhood
 import java.util.concurrent.ConcurrentLinkedQueue
-import me.ngrid.duke.simulation.Simulation
 import me.ngrid.duke.simulation.ca.CellularAutomaton
 
 class GameOfLife[N <: Int, T](dim: Int, gol: CellularAutomaton[N, T]) {

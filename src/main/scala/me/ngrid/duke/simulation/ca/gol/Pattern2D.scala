@@ -1,14 +1,19 @@
 package me.ngrid.duke.simulation.ca.gol
 
-final case class Pattern2D[D <: Int](underlying: Array[Boolean])(implicit d: ValueOf[D]) extends Brush[2]{
-  assert(underlying.length == (d.value * d.value))
+import me.ngrid.duke.simulation.Point
+
+final case class Pattern2D(size: Point._2D[Int], underlying: Array[Boolean]) extends Brush[Boolean]{
+  // assert(offsets.length == (size.x * size.y))
+
+  override val offsets = underlying
+  override val dimensions = 2
 
   def apply(x: Int, y: Int, stateDimLength: Int, state: Array[Boolean]): Array[Boolean] = {
-    assert(state.length > underlying.length)
+    assert(state.length > offsets.length)
     val res = state.clone()
-    for(k <- 0 until d.value) {
-      for (i <- 0 until d.value) {
-        res(loop(k + y, stateDimLength) * stateDimLength  + loop(i + x, stateDimLength)) = underlying(k * d.value + i)
+    for(k <- 0 until size.y) {
+      for (i <- 0 until size.x) {
+        res(loop(k + y, stateDimLength) * stateDimLength  + loop(i + x, stateDimLength)) = offsets(k * size.y + i)
       }
     }
     res
@@ -18,40 +23,39 @@ final case class Pattern2D[D <: Int](underlying: Array[Boolean])(implicit d: Val
 }
 
 object Pattern2D {
+  private[this] val p = Point._2D.apply[Int] _
+
   //Still lifes
-  val block = new Pattern2D[2](Array(
+  val block = new Pattern2D(p(2,2), Array(
     true, true,
     true, true,
   ))
 
-  val tub = new Pattern2D[3](Array(
+  val tub = new Pattern2D(p(3,3), Array(
     false, true, false,
     true, false, true,
     false, true, false,
   ))
 
-  val beehive = new Pattern2D[4](Array(
+  val beehive = new Pattern2D(p(4,3), Array(
     false, true, true, false,
     true, false,false, true,
     false, true, true, false,
-    false, false, false, false,
   ))
 
   /// Oscillators
-  val blinker = new Pattern2D[3](Array(
-    false, true, false,
-    false, true, false,
-    false, true, false,
+  val blinker = new Pattern2D(p(1, 3), Array(
+    true,
+    true,
+    true,
   ))
 
-  val toad = new Pattern2D[4](Array(
-    false, false, false, false,
+  val toad = new Pattern2D(p(4, 2), Array(
     false, true, true, true,
     true, true, true, false,
-    false, false, false, false,
   ))
 
-  val beacon = new Pattern2D[4](Array(
+  val beacon = new Pattern2D(p(4,4), Array(
     true, true, false, false,
     true, true, false, false,
     false, false, true, true,
@@ -60,7 +64,7 @@ object Pattern2D {
 
 
   /// Spaceships -> Conway actually wanted to call this an ant, he regrets it
-  val glider = new Pattern2D[3](Array(
+  val glider = new Pattern2D(p(3,3), Array(
     false, false, true,
     true, false, true,
     false, true, true,
