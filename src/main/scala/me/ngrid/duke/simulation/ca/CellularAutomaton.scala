@@ -5,17 +5,20 @@ import me.ngrid.duke.util.{NArray, Show}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import me.ngrid.duke.simulation.ca.mutable.StateBuffer
+import me.ngrid.duke.simulation.Point
+import me.ngrid.duke.simulation.NDimensional
 
-final class CellularAutomaton[D <: Int, Cell: ClassTag] private (
+final class CellularAutomaton[Cell: ClassTag] private (
     val cells: Array[Cell],
     dimLength: Int,
     dim: Int,
     hoods: Array[Array[Int]]
-)(implicit s: ValueOf[D]) {
+){
 
   def advanceSate(
-      f: Neighborhood[D, Cell] => Cell
-  ): CellularAutomaton[D, Cell] = {
+      f: Neighborhood[Cell] => Cell
+  ): CellularAutomaton[Cell] = {
     val next = Array.ofDim[Cell](cells.length)
 
     for (d <- cells.indices) { next(d) = f(neighbors(d)) }
@@ -23,7 +26,7 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private (
     new CellularAutomaton(next, dimLength, dim, hoods)
   }
 
-  def augment[T : ClassTag](f: Array[Cell] => Array[T]): CellularAutomaton[D, T] = {
+  def augment[T : ClassTag](f: Array[Cell] => Array[T]): CellularAutomaton[T] = {
     val res = f(cells)
     assert(
       res.length == cells.length,
@@ -32,15 +35,21 @@ final class CellularAutomaton[D <: Int, Cell: ClassTag] private (
     new CellularAutomaton(res, dimLength, dim, hoods)
   }
 
-  def neighbors(v: Int): Neighborhood[D, Cell] =
-    NArray[D, Cell](hoods(v).map(cells.apply))
+  val stateBuffer: StateBuffer[Cell] = 
+    StateBuffer.ofDim(new NDimensional[Int]  {
+      override val offsets: Seq[Int] = Array.fill(dim)(dimLength)
+      override val dimensions: Int = dim
+    }, cells)
+
+  def neighbors(v: Int): Neighborhood[Cell] =
+    hoods(v).map(cells.apply)
 
   def foreach(f: Cell => Unit): Unit = cells.foreach(f)
 }
 
 object CellularAutomaton {
 
-  def x1D[Cell: ClassTag](init: Array[Cell]): CellularAutomaton[3, Cell] =
+  def x1D[Cell: ClassTag](init: Array[Cell]): CellularAutomaton[Cell] =
     new CellularAutomaton(
       init,
       init.length,
@@ -51,7 +60,7 @@ object CellularAutomaton {
   def x2D[Cell: ClassTag](
       size: Int,
       init: Array[Cell]
-  ): CellularAutomaton[9, Cell] =
+  ): CellularAutomaton[Cell] =
     new CellularAutomaton(
       init,
       size,
@@ -59,9 +68,9 @@ object CellularAutomaton {
       calculateNeighborhoods(size, 2, init.length)
     )
 
-  implicit def show[D <: Int, Cell](
+  implicit def show[Cell](
       implicit s: Show[Cell]
-  ): Show[CellularAutomaton[D, Cell]] = (v: CellularAutomaton[D, Cell]) => {
+  ): Show[CellularAutomaton[Cell]] = (v: CellularAutomaton[Cell]) => {
     val stringBuilder = new StringBuilder
     v.foreach(x => stringBuilder.append(s.apply(x)))
     stringBuilder.toString()
@@ -111,6 +120,5 @@ object CellularAutomaton {
     if (i < 0) len - 1 else i % len
   }
 
-  type Neighborhood[Nit <: Int, State] = NArray[Nit, State]
-  object Neighborhood {}
+  type Neighborhood[State] = Array[State]
 }

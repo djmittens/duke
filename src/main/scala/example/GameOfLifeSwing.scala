@@ -13,20 +13,22 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.swing.Timer
 import me.ngrid.duke.simulation.ca.CellularAutomaton
 import me.ngrid.duke.simulation.ca.gol.{GameOfLife, Pattern2D}
+import me.ngrid.duke.simulation.Point
 import me.ngrid.duke.swing
 
 import scala.io.StdIn
 import scala.util.Try
+import me.ngrid.duke.simulation.ca.mutable.StateBuffer
 
 class GameOfLifeSwing(dim: Int) {
   val (jframe, pixels) = swing.simpleScaledBltWindow(dim, dim, 17)
 
-  var brush: Pattern2D = Pattern2D.beacon
+  var brush: StateBuffer[Boolean] = Pattern2D.beacon
 
   object sim {
     sealed trait Command extends Product with Serializable
     final case class Paint(x: Int, y: Int) extends Command
-    final case class SetBrush(brush: Pattern2D) extends Command
+    final case class SetBrush(brush: StateBuffer[Boolean]) extends Command
 
     val workQueue = new ConcurrentLinkedQueue[Command]()
 
@@ -56,7 +58,8 @@ class GameOfLifeSwing(dim: Int) {
         val cmd = workQueue.poll()
         cmd match {
           case Paint(x, y) =>
-            gol = gol.augment(k => brush(x, y, dim, k))
+            // gol = gol.augment(k => brush(x, y, dim, k))
+            gol.stateBuffer.paintF[Boolean](identity)(Point._2D(x, y), brush)
           case SetBrush(b) =>
             brush = b
         }
@@ -107,7 +110,7 @@ object GameOfLifeSwing {
   def main(args: Array[String]): Unit = {
 //    val game = new GameOfLifeSwing(3840 / 6)
     // val game = new GameOfLifeSwing(1024)
-    val game = new GameOfLifeSwing(256)
+    val game = new GameOfLifeSwing(128)
     while (true) Try {
       val input = StdIn.readLine()
       if (input == null) System.exit(0)

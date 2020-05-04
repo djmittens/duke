@@ -2,40 +2,51 @@ package me.ngrid.duke.simulation.ca.mutable
 
 import me.ngrid.duke.simulation.Point
 import scala.collection.mutable
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
+import me.ngrid.duke.simulation.NDimensional
 
-sealed class StateBuffer[N <: Int, State](
-    size: StateBuffer.Dimensions,
-    underlying: Array[State]
-)(implicit d: ValueOf[N]) {
-
-  assert(size.dimensions == d.value, "The number of dimensions presented in size must match, the dimensionality of this buffer.")
+sealed class StateBuffer[ State](
+    val size: StateBuffer.Dimensions,
+    private val underlying: Array[State]
+) {
+  assert(size.dimensions > 0)
   assert(underlying.length >= size.offsets.product, "The size of the buffer must be large enough to store state of the given size")
 
+  val dimensions = size.dimensions
+  private val prods = size.offsets.tail.foldRight(1 :: Nil){ (i, acc) => (i * acc.head) :: acc }
+
   // Why am i having such a hard dtime visualizing this.
-  def paint(offset: Point[Int], brush: StateBuffer[N, State]): Unit = {
-      
-  }
+  def paintF[T](f: T => State)(offset: NDimensional[Int], brush: StateBuffer[T]):  Unit = {
+    assert(offset.dimensions == size.dimensions)
 
-  def translate(from: Int, offset: Point[Int]): Int = {
-    ???
-  }
+    // println(prods)
+    paint(
+      offset.offsets.toList, 
+      brush.size.offsets.toList, 
+      brush.prods,
+      prods, 
+      0, 0)
 
+    def paint(off: List[Int], dims: List[Int], prodsB: List[Int], prodsC: List[Int], from: Int, to: Int): Unit = {
+        off match {
+          case Nil => 
+            if(from > 0 && from < brush.underlying.length && to > 0 && to < underlying.length) {
+            // if(true) {
+              underlying(to) = f(brush.underlying(from))
+            }
+          case o :: _ =>
+            val pB = prodsB.head
+            val pC = prodsC.head
 
-  private[this] def paint(
-      dimsTo: Iterator[Int] = size.offsets.reverseIterator,
-      offsetsFrom: Iterator[Int],
-      dimsFrom: Iterator[Int],
-      buffer: Array[State]
-  ): Unit = {
-    if (!dimsFrom.isEmpty) {
-      val u = dimsFrom.next()
-      val v = dimsTo.next()
-
-      for (i <- 0 until u) {}
+            (0 until dims.head).foreach { i =>
+              paint(off.tail, dims.tail, prodsB.tail, prodsC.tail, from + (i * pB), to + ((i + o)*pC))
+            }
+        }
     }
   }
 
-  def read(offsets: Iterator[Int]): Iterator[State] = ???
+  def foreach(f: State => Unit): Unit = underlying.foreach(f)
   def iterator: Iterator[State] = underlying.iterator
 
   private[this] def spaceWarp(x: Int, min: Int, max: Int): Int = {
@@ -44,5 +55,10 @@ sealed class StateBuffer[N <: Int, State](
 }
 
 object StateBuffer {
-  type Dimensions = Point[Int]
+  type Dimensions = NDimensional[Int]
+  def ofDim[State : ClassTag](dimensions: Dimensions): StateBuffer[State] = 
+    ofDim(dimensions, Array.ofDim[State](dimensions.offsets.product))
+
+  def ofDim[State](dimensions: Dimensions, buffer: Array[State]): StateBuffer[State] =
+    new StateBuffer[State](dimensions, buffer)
 }

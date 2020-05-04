@@ -1,6 +1,7 @@
 package me.ngrid.duke.simulation.ca.gol
 
 import me.ngrid.duke.simulation.Point
+import me.ngrid.duke.simulation.ca.mutable.StateBuffer
 
 final case class Pattern2D(size: Point._2D[Int], underlying: Array[Boolean]) extends Brush[Boolean]{
   // assert(offsets.length == (size.x * size.y))
@@ -23,39 +24,39 @@ final case class Pattern2D(size: Point._2D[Int], underlying: Array[Boolean]) ext
 }
 
 object Pattern2D {
-  private[this] val p = Point._2D.apply[Int] _
+  val p = Point._2D.apply[Int] _
 
   //Still lifes
-  val block = new Pattern2D(p(2,2), Array(
+  val block = StateBuffer.ofDim(p(2,2), Array(
     true, true,
     true, true,
   ))
 
-  val tub = new Pattern2D(p(3,3), Array(
+  val tub = StateBuffer.ofDim(p(3,3), Array(
     false, true, false,
     true, false, true,
     false, true, false,
   ))
 
-  val beehive = new Pattern2D(p(4,3), Array(
+  val beehive = StateBuffer.ofDim(p(4,3), Array(
     false, true, true, false,
     true, false,false, true,
     false, true, true, false,
   ))
 
   /// Oscillators
-  val blinker = new Pattern2D(p(1, 3), Array(
+  val blinker = StateBuffer.ofDim(p(1, 3), Array(
     true,
     true,
     true,
   ))
 
-  val toad = new Pattern2D(p(4, 2), Array(
+  val toad = StateBuffer.ofDim(p(4, 2), Array(
     false, true, true, true,
     true, true, true, false,
   ))
 
-  val beacon = new Pattern2D(p(4,4), Array(
+  val beacon = StateBuffer.ofDim(p(4,4), Array(
     true, true, false, false,
     true, true, false, false,
     false, false, true, true,
@@ -64,7 +65,7 @@ object Pattern2D {
 
 
   /// Spaceships -> Conway actually wanted to call this an ant, he regrets it
-  val glider = new Pattern2D(p(3,3), Array(
+  val glider = StateBuffer.ofDim(p(3,3), Array(
     false, false, true,
     true, false, true,
     false, true, true,
