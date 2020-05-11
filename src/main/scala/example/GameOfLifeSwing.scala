@@ -110,7 +110,7 @@ object GameOfLifeSwing {
   def main(args: Array[String]): Unit = {
 //    val game = new GameOfLifeSwing(3840 / 6)
     // val game = new GameOfLifeSwing(1024)
-    val game = new GameOfLifeSwing(128)
+    val game = new GameOfLifeSwing(512)
     while (true) Try {
       val input = StdIn.readLine()
       if (input == null) System.exit(0)

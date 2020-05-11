@@ -1,3 +1,3 @@
 package me.ngrid.duke
 
-package object swing extends Functions {}
+package object swing extends SwingFunctions {}

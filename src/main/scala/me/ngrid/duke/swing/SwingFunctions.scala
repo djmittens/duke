@@ -8,8 +8,9 @@ import javax.swing
 import javax.swing.{JFrame, WindowConstants}
 
 import scala.util.Try
+import java.awt.Point
 
-trait Functions {
+trait SwingFunctions {
   def simpleScaledBltWindow(bufferWidth: Int, bufferHeight: Int, drawDelay: Int): (swing.JFrame, Array[Int]) = {
     val canvas = PixelBltCanvas(bufferWidth, bufferHeight)
 
@@ -43,6 +44,10 @@ trait Functions {
         super.addKeyListener(l)
         canvas.addKeyListener(l)
       }
+
+      override def getMousePosition(): Point = {
+        canvas.getMousePosition()
+      }
     }
 
     jframe.add(canvas)
@@ -51,4 +56,5 @@ trait Functions {
 
     jframe -> canvas.pixels
   }
+
 }
