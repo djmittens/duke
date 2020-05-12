@@ -15,6 +15,9 @@ import java.awt.event.MouseEvent
 import java.awt.MouseInfo
 import java.awt.event.MouseWheelListener
 import java.awt.event.MouseWheelEvent
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentListener
+import java.awt.event.ComponentEvent
 
 class GoLEditor(
     brushDict: mutable.Map[String, GoLEditor.Buffer],
@@ -78,17 +81,17 @@ class GoLEditor(
             pin = p
 
           case GoLEditor.Zoom(amnt) if amnt > 0 =>
-            VIEWPORT_SIZE_X += 4
-            VIEWPORT_SIZE_Y += 4
-            bltCanvas.resizeBuffer(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y)
+            VIEWPORT_SIZE_X = (VIEWPORT_SIZE_X * 1.1d).toInt
+            VIEWPORT_SIZE_Y = (VIEWPORT_SIZE_Y * 1.1d).toInt
+            bltCanvas.resizeBuffer(width = VIEWPORT_SIZE_X, height = VIEWPORT_SIZE_Y)
             canvas = StateBuffer.ofDim(
               Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
               bltCanvas.pixels
             )
           case GoLEditor.Zoom(amnt) if amnt < 0 =>
-            VIEWPORT_SIZE_X -= 4
-            VIEWPORT_SIZE_Y -= 4
-            bltCanvas.resizeBuffer(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y)
+            VIEWPORT_SIZE_X = (VIEWPORT_SIZE_X * 0.9d).toInt
+            VIEWPORT_SIZE_Y = (VIEWPORT_SIZE_Y * 0.9d).toInt
+            bltCanvas.resizeBuffer(width = VIEWPORT_SIZE_X, height = VIEWPORT_SIZE_Y)
             canvas = StateBuffer.ofDim(
               Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
               bltCanvas.pixels
@@ -120,10 +123,15 @@ class GoLEditor(
 
   bltCanvas.addMouseListener(listener)
   bltCanvas.addMouseWheelListener(listener)
+  bltCanvas.addComponentListener(listener)
   jframe.setVisible(true)
+  listener.newAspectRatio()
   sim.timer.start()
 
-  object listener extends MouseListener with MouseWheelListener {
+  object listener
+      extends MouseListener
+      with MouseWheelListener
+      with ComponentListener {
 
     override def mouseWheelMoved(e: MouseWheelEvent): Unit = {
       sim.workQueue.offer(GoLEditor.Zoom(e.getWheelRotation()))
@@ -185,6 +193,37 @@ class GoLEditor(
         timers(button).stop()
     }
 
+    override def componentResized(e: ComponentEvent): Unit = newAspectRatio()
+    override def componentShown(e: ComponentEvent): Unit = newAspectRatio()
+
+    def newAspectRatio(): Unit = {
+      val w = bltCanvas.getWidth()
+      val h = bltCanvas.getHeight()
+
+      if (w > h) {
+        VIEWPORT_SIZE_Y = ((h.toDouble / w) * VIEWPORT_SIZE_X).toInt
+        bltCanvas.resizeBuffer(
+          width = VIEWPORT_SIZE_X,
+          height = VIEWPORT_SIZE_Y
+        )
+      } else {
+        VIEWPORT_SIZE_X = ((w.toDouble / h) * VIEWPORT_SIZE_Y).toInt
+        bltCanvas.resizeBuffer(
+          width = VIEWPORT_SIZE_X,
+          height = VIEWPORT_SIZE_Y
+        )
+      }
+
+      canvas = StateBuffer.ofDim(
+        Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
+        bltCanvas.pixels
+      )
+    }
+
+    override def componentMoved(x$1: ComponentEvent): Unit = ()
+
+    override def componentHidden(x$1: ComponentEvent): Unit = ()
+
     override def mouseClicked(x$1: MouseEvent): Unit = ()
 
     override def mouseEntered(x$1: MouseEvent): Unit = ()
@@ -223,7 +262,9 @@ object GoLEditor {
       mutable.Map.from(Pattern2D.apply).concat(defaultBuffers),
       "beehive"
     )
-    while (true) {}
+    while (true) {
+      Thread.sleep(1000)
+    }
     println("Hello Wolrd")
   }
 }
