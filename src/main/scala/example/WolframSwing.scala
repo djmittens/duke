@@ -11,7 +11,7 @@ import scala.io.StdIn
 import scala.util.{Random, Try}
 
 class WolframSwing(dim: Int, code: Int) {
-  val (jframe, pixels) = swing.simpleScaledBltWindow(dim, dim, 17)
+  val (jframe, canvas) = swing.simpleScaledBltWindow(dim, dim, 17)
 
   object sim {
     val DEFAULT_STATE: Array[Boolean] = {
@@ -43,12 +43,12 @@ class WolframSwing(dim: Int, code: Int) {
     def draw(): Unit =
         // shift every pixel up
         for (i <- 0 until (dim * (dim - 1))) {
-          pixels(i) = pixels(i + dim)
+          canvas.pixels(i) = canvas.pixels(i + dim)
         }
         // fetch fresh state
         for (i <- (0 until dim).reverse) {
-          val x = pixels.length - 1 - i
-          pixels(x) = if (game.cells(i)) Color.GREEN.getRGB else 0
+          val x = canvas.pixels.length - 1 - i
+          canvas.pixels(x) = if (game.cells(i)) Color.GREEN.getRGB else 0
         }
 
     def shakeIt(): Unit =

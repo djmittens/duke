@@ -13,18 +13,24 @@ import me.ngrid.duke.simulation.Point
 import java.awt.event.MouseListener
 import java.awt.event.MouseEvent
 import java.awt.MouseInfo
+import java.awt.event.MouseWheelListener
+import java.awt.event.MouseWheelEvent
 
 class GoLEditor(
     brushDict: mutable.Map[String, GoLEditor.Buffer],
     var selectedBrush: String
 ) {
-  val VIEWPORT_SIZE_X = 128
+  var VIEWPORT_SIZE_X = 128
+  var VIEWPORT_SIZE_Y = 128
 
-  val (jframe, pixels) =
-    swing.simpleScaledBltWindow(VIEWPORT_SIZE_X, VIEWPORT_SIZE_X, 8)
+  val (jframe, bltCanvas) =
+    swing.simpleScaledBltWindow(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y, 8)
 
-  val canvas =
-    StateBuffer.ofDim(Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_X), pixels)
+  var canvas =
+    StateBuffer.ofDim(
+      Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
+      bltCanvas.pixels
+    )
 
   object sim {
     val POINT_ZERO = Point._2D[Int](0, 0)
@@ -47,8 +53,8 @@ class GoLEditor(
         val cmd = workQueue.poll()
         cmd match {
           case GoLEditor.Paint(x, y) =>
-            val offX = (x * VIEWPORT_SIZE_X).toInt
-            val offY = (y * VIEWPORT_SIZE_X).toInt
+            val offX = (x * VIEWPORT_SIZE_X).toInt - viewportOffset.x
+            val offY = (y * VIEWPORT_SIZE_Y).toInt - viewportOffset.y
             // gol = gol.augment(k => brush(x, y, dim, k))
             // gol.stateBuffer.paintF[Boolean](identity)(Point._2D(x, y), brush)
             val b = brushDict(selectedBrush)
@@ -60,16 +66,33 @@ class GoLEditor(
           case GoLEditor.Viewport.Pin(x, y) =>
             pin = Point._2D(
               (x * VIEWPORT_SIZE_X).toInt,
-              (y * VIEWPORT_SIZE_X).toInt
+              (y * VIEWPORT_SIZE_Y).toInt
             )
           case GoLEditor.Viewport.Pan(x, y) =>
             val p = Point._2D(
               (x * VIEWPORT_SIZE_X).toInt,
-              (y * VIEWPORT_SIZE_X).toInt
+              (y * VIEWPORT_SIZE_Y).toInt
             )
             val d = p - pin
             viewportOffset = viewportOffset + d
             pin = p
+
+          case GoLEditor.Zoom(amnt) if amnt > 0 =>
+            VIEWPORT_SIZE_X += 4
+            VIEWPORT_SIZE_Y += 4
+            bltCanvas.resizeBuffer(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y)
+            canvas = StateBuffer.ofDim(
+              Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
+              bltCanvas.pixels
+            )
+          case GoLEditor.Zoom(amnt) if amnt < 0 =>
+            VIEWPORT_SIZE_X -= 4
+            VIEWPORT_SIZE_Y -= 4
+            bltCanvas.resizeBuffer(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y)
+            canvas = StateBuffer.ofDim(
+              Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
+              bltCanvas.pixels
+            )
           case other =>
             System.err.println(
               s"Editor command $other is not supported at the moment"
@@ -82,6 +105,7 @@ class GoLEditor(
     }
 
     def draw(): Unit = {
+      bltCanvas.clear(Color.GRAY)
       // paint onto the canvas.
       visibleBuffers.foreach {
         case (name, color) =>
@@ -94,27 +118,31 @@ class GoLEditor(
     }
   }
 
-  jframe.addMouseListener(listener)
+  bltCanvas.addMouseListener(listener)
+  bltCanvas.addMouseWheelListener(listener)
   jframe.setVisible(true)
   sim.timer.start()
 
-  object listener extends MouseListener {
-    val canvas = jframe.getComponents().head
+  object listener extends MouseListener with MouseWheelListener {
+
+    override def mouseWheelMoved(e: MouseWheelEvent): Unit = {
+      sim.workQueue.offer(GoLEditor.Zoom(e.getWheelRotation()))
+    }
 
     def normalizedMousePosition: (Double, Double) = {
-      val pos = canvas.getMousePosition()
+      val pos = bltCanvas.getMousePosition()
       if (pos != null) {
         import pos._
-        x.toDouble / canvas.getWidth() -> y.toDouble / canvas.getHeight()
+        x.toDouble / bltCanvas.getWidth() -> y.toDouble / bltCanvas.getHeight()
       } else 0d -> 0d
     }
 
     def newEventEmitter(
-        delay: Long
+        delay: Int
     )(newEvent: (Double, Double) => GoLEditor.Command): Timer = {
       val f = newEvent.tupled
-      new Timer(20, { _ =>
-        val pos = canvas.getMousePosition()
+      new Timer(delay, { _ =>
+        val pos = bltCanvas.getMousePosition()
         if (pos != null) {
           // println(s"${pos.getX} -> ${pos.getY}")
           // This assumes that the only component is the canvas.
@@ -180,8 +208,7 @@ object GoLEditor {
     final case class Pan(x: Double, y: Double) extends Command
   }
 
-  final case object ZoomIn extends Command
-  final case object ZoomOut extends Command
+  final case class Zoom(amount: Int) extends Command
 
   final case class SetBrush(brush: String) extends Command
   final case class DisplayBuffer(name: String, color: Color) extends Command

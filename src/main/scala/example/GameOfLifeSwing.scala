@@ -21,7 +21,7 @@ import scala.util.Try
 import me.ngrid.duke.simulation.ca.mutable.StateBuffer
 
 class GameOfLifeSwing(dim: Int) {
-  val (jframe, pixels) = swing.simpleScaledBltWindow(dim, dim, 17)
+  val (jframe, canvas) = swing.simpleScaledBltWindow(dim, dim, 17)
 
   var brush: StateBuffer[Boolean] = Pattern2D.beacon
 
@@ -48,7 +48,7 @@ class GameOfLifeSwing(dim: Int) {
     def draw(): Unit = {
       val green = Color.GREEN.getRGB
       for (i <- gol.cells.indices) {
-        pixels(i) = if (gol.cells(i)) green else 0
+        canvas.pixels(i) = if (gol.cells(i)) green else 0
       }
     }
 

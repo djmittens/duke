@@ -11,23 +11,25 @@ import scala.util.Try
 import java.awt.Point
 
 trait SwingFunctions {
-  def simpleScaledBltWindow(bufferWidth: Int, bufferHeight: Int, drawDelay: Int): (swing.JFrame, Array[Int]) = {
+  def simpleScaledBltWindow(
+      bufferWidth: Int,
+      bufferHeight: Int,
+      drawDelay: Int
+  ): (swing.JFrame, PixelBltCanvas) = {
     val canvas = PixelBltCanvas(bufferWidth, bufferHeight)
 
-    val timer = new swing.Timer (drawDelay, { _ =>
-      Try(canvas.draw())
-    })
+    val timer = new swing.Timer(drawDelay, { _ => Try(canvas.draw()) })
 
     val jframe: JFrame = new swing.JFrame() {
       override val getPreferredSize: Dimension = new Dimension(500, 500)
 
-      override def dispose(): Unit =  {
-        if(timer.isRunning) timer.stop()
+      override def dispose(): Unit = {
+        if (timer.isRunning) timer.stop()
         super.dispose()
       }
 
       override def setVisible(b: Boolean): Unit = {
-        if(b && !timer.isRunning) {
+        if (b && !timer.isRunning) {
           timer.start()
         } else if (!b && timer.isRunning) {
           timer.stop()
@@ -54,7 +56,8 @@ trait SwingFunctions {
 
     jframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
 
-    jframe -> canvas.pixels
+    jframe -> canvas
+
   }
 
 }
