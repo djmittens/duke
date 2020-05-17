@@ -18,24 +18,24 @@ import java.awt.event.MouseWheelEvent
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentListener
 import java.awt.event.ComponentEvent
+import me.ngrid.duke.simulation.NDimensional
+import scala.collection.View
+import java.awt.Canvas
+import me.ngrid.duke.swing.PixelBltCanvas
 
 class GoLEditor(
     brushDict: mutable.Map[String, GoLEditor.Buffer],
     var selectedBrush: String
 ) {
-  var VIEWPORT_SIZE_X = 128
-  var VIEWPORT_SIZE_Y = 128
 
   val (jframe, bltCanvas) =
-    swing.simpleScaledBltWindow(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y, 8)
+    swing.simpleScaledBltWindow(256, 256, 8)
 
-  var canvas =
-    StateBuffer.ofDim(
-      Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
-      bltCanvas.pixels
-    )
+  val viewport = GoLEditor.GolViewport(bltCanvas)(256, 256)
+
 
   object sim {
+    val ZOOM_MULTIPLIER = 10
     val POINT_ZERO = Point._2D[Int](0, 0)
     var visibleBuffers: mutable.Map[String, Color] =
       mutable.Map("gol" -> Color.MAGENTA)
@@ -56,8 +56,8 @@ class GoLEditor(
         val cmd = workQueue.poll()
         cmd match {
           case GoLEditor.Paint(x, y) =>
-            val offX = (x * VIEWPORT_SIZE_X).toInt - viewportOffset.x
-            val offY = (y * VIEWPORT_SIZE_Y).toInt - viewportOffset.y
+            val offX = (x * viewport.sizeX).toInt - viewportOffset.x
+            val offY = (y * viewport.sizeY).toInt - viewportOffset.y
             // gol = gol.augment(k => brush(x, y, dim, k))
             // gol.stateBuffer.paintF[Boolean](identity)(Point._2D(x, y), brush)
             val b = brushDict(selectedBrush)
@@ -68,34 +68,20 @@ class GoLEditor(
             )
           case GoLEditor.Viewport.Pin(x, y) =>
             pin = Point._2D(
-              (x * VIEWPORT_SIZE_X).toInt,
-              (y * VIEWPORT_SIZE_Y).toInt
+              (x * viewport.sizeX).toInt,
+              (y * viewport.sizeY).toInt
             )
           case GoLEditor.Viewport.Pan(x, y) =>
             val p = Point._2D(
-              (x * VIEWPORT_SIZE_X).toInt,
-              (y * VIEWPORT_SIZE_Y).toInt
+              (x * viewport.sizeX).toInt,
+              (y * viewport.sizeY).toInt
             )
             val d = p - pin
             viewportOffset = viewportOffset + d
             pin = p
 
-          case GoLEditor.Zoom(amnt) if amnt > 0 =>
-            VIEWPORT_SIZE_X = (VIEWPORT_SIZE_X * 1.1d).toInt
-            VIEWPORT_SIZE_Y = (VIEWPORT_SIZE_Y * 1.1d).toInt
-            bltCanvas.resizeBuffer(width = VIEWPORT_SIZE_X, height = VIEWPORT_SIZE_Y)
-            canvas = StateBuffer.ofDim(
-              Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
-              bltCanvas.pixels
-            )
-          case GoLEditor.Zoom(amnt) if amnt < 0 =>
-            VIEWPORT_SIZE_X = (VIEWPORT_SIZE_X * 0.9d).toInt
-            VIEWPORT_SIZE_Y = (VIEWPORT_SIZE_Y * 0.9d).toInt
-            bltCanvas.resizeBuffer(width = VIEWPORT_SIZE_X, height = VIEWPORT_SIZE_Y)
-            canvas = StateBuffer.ofDim(
-              Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
-              bltCanvas.pixels
-            )
+          case GoLEditor.Zoom(amnt) =>
+            viewport.zoom(amnt * ZOOM_MULTIPLIER)
           case other =>
             System.err.println(
               s"Editor command $other is not supported at the moment"
@@ -112,7 +98,7 @@ class GoLEditor(
       // paint onto the canvas.
       visibleBuffers.foreach {
         case (name, color) =>
-          canvas.paintF(if (_) color.getRGB() else Color.BLACK.getRGB())(
+          viewport.paintF(if (_) color.getRGB() else Color.BLACK.getRGB())(
             viewportOffset,
             brushDict(name)
           )
@@ -123,15 +109,12 @@ class GoLEditor(
 
   bltCanvas.addMouseListener(listener)
   bltCanvas.addMouseWheelListener(listener)
-  bltCanvas.addComponentListener(listener)
   jframe.setVisible(true)
-  listener.newAspectRatio()
   sim.timer.start()
 
   object listener
       extends MouseListener
-      with MouseWheelListener
-      with ComponentListener {
+      with MouseWheelListener {
 
     override def mouseWheelMoved(e: MouseWheelEvent): Unit = {
       sim.workQueue.offer(GoLEditor.Zoom(e.getWheelRotation()))
@@ -193,36 +176,6 @@ class GoLEditor(
         timers(button).stop()
     }
 
-    override def componentResized(e: ComponentEvent): Unit = newAspectRatio()
-    override def componentShown(e: ComponentEvent): Unit = newAspectRatio()
-
-    def newAspectRatio(): Unit = {
-      val w = bltCanvas.getWidth()
-      val h = bltCanvas.getHeight()
-
-      if (w > h) {
-        VIEWPORT_SIZE_Y = ((h.toDouble / w) * VIEWPORT_SIZE_X).toInt
-        bltCanvas.resizeBuffer(
-          width = VIEWPORT_SIZE_X,
-          height = VIEWPORT_SIZE_Y
-        )
-      } else {
-        VIEWPORT_SIZE_X = ((w.toDouble / h) * VIEWPORT_SIZE_Y).toInt
-        bltCanvas.resizeBuffer(
-          width = VIEWPORT_SIZE_X,
-          height = VIEWPORT_SIZE_Y
-        )
-      }
-
-      canvas = StateBuffer.ofDim(
-        Point._2D(VIEWPORT_SIZE_X, VIEWPORT_SIZE_Y),
-        bltCanvas.pixels
-      )
-    }
-
-    override def componentMoved(x$1: ComponentEvent): Unit = ()
-
-    override def componentHidden(x$1: ComponentEvent): Unit = ()
 
     override def mouseClicked(x$1: MouseEvent): Unit = ()
 
@@ -242,6 +195,7 @@ object GoLEditor {
   // 0 to 1
   final case class Paint(x: Double, y: Double) extends Command
 
+  type Viewport = Point._2D[Int]
   object Viewport {
     final case class Pin(x: Double, y: Double) extends Command
     final case class Pan(x: Double, y: Double) extends Command
@@ -253,6 +207,52 @@ object GoLEditor {
   final case class DisplayBuffer(name: String, color: Color) extends Command
   final case class HideBuffer(name: String) extends Command
   final case class NewBuffer(name: String, size: (Int, Int)) extends Command
+
+
+  final case class GolViewport(val awtCanvas: PixelBltCanvas )(var sizeX: Int = awtCanvas.getWidth(), var sizeY: Int = awtCanvas.getHeight()) {
+    var buffer: StateBuffer[Int] = _
+    // resize(this.sizeX, this.sizeY)
+
+    awtCanvas.addComponentListener(new ComponentListener {
+
+      override def componentResized(x$1: ComponentEvent): Unit = {
+        resize(sizeX, sizeY)
+      }
+
+      override def componentMoved(x$1: ComponentEvent): Unit = ()
+
+      override def componentShown(x$1: ComponentEvent): Unit = ()
+
+      override def componentHidden(x$1: ComponentEvent): Unit = ()
+    })
+
+    def alignAspectRatio(x: Int, y: Int): (Int, Int) = {
+      val w = awtCanvas.getWidth()
+      val h = awtCanvas.getHeight()
+      if (w > h) {
+        x -> ((h.toDouble / w) * x).toInt
+      } else {
+        ((w.toDouble / h) * y).toInt -> y
+      }
+    }
+
+    def resize(x: Int, y: Int): Unit = {
+      val (ax, ay) = alignAspectRatio(x, y)
+      this.sizeX = ax
+      this.sizeY = ay
+      awtCanvas.resizeBuffer(ax, ay)
+      buffer = StateBuffer.ofDim(Point._2D(ax, ay), awtCanvas.pixels)
+    }
+
+    def zoom(pixels: Int): Unit = {
+      resize(sizeX + pixels, sizeY + pixels)
+    }
+
+    def paintF[T](f: T => Int)(offset: Point._2D[Int], state: StateBuffer[T]): Unit = {
+      buffer.paintF(f)(offset, state)
+    }
+
+  }
 
   def main(args: Array[String]): Unit = {
 
