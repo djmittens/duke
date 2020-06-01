@@ -27,11 +27,12 @@ class GoLEditor(
     brushDict: mutable.Map[String, GoLEditor.Buffer],
     var selectedBrush: String
 ) {
+  val INITIAL_SIZE = 256
 
   val (jframe, bltCanvas) =
-    swing.simpleScaledBltWindow(256, 256, 8)
+    swing.simpleScaledBltWindow(INITIAL_SIZE, INITIAL_SIZE, 8)
 
-  val viewport = GoLEditor.GolViewport(bltCanvas)(256, 256)
+  val viewport = GoLEditor.GolViewport(bltCanvas)(INITIAL_SIZE, INITIAL_SIZE)
 
 
   object sim {
@@ -81,7 +82,9 @@ class GoLEditor(
             pin = p
 
           case GoLEditor.Zoom(amnt) =>
-            viewport.zoom(amnt * ZOOM_MULTIPLIER)
+            val pixels = amnt * ZOOM_MULTIPLIER
+            viewport.zoom(pixels)
+            viewportOffset = viewportOffset + Point._2D(pixels / 2, pixels / 2)
           case other =>
             System.err.println(
               s"Editor command $other is not supported at the moment"
@@ -236,16 +239,18 @@ object GoLEditor {
       }
     }
 
-    def resize(x: Int, y: Int): Unit = {
-      val (ax, ay) = alignAspectRatio(x, y)
+    def resize(x: Int, y: Int): (Int, Int) = {
+      val res @ (ax, ay) = alignAspectRatio(x, y)
       this.sizeX = ax
       this.sizeY = ay
       awtCanvas.resizeBuffer(ax, ay)
       buffer = StateBuffer.ofDim(Point._2D(ax, ay), awtCanvas.pixels)
+      res
     }
 
     def zoom(pixels: Int): Unit = {
-      resize(sizeX + pixels, sizeY + pixels)
+      // TODO add boundary checks here to make sure we arent able to zoom an incorrect amount
+      resize(this.sizeX + pixels, this.sizeY + pixels)
     }
 
     def paintF[T](f: T => Int)(offset: Point._2D[Int], state: StateBuffer[T]): Unit = {

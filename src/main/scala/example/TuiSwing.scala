@@ -1,10 +1,10 @@
 package example
 
-import me.ngrid.duke.console.TuiSwing
+import me.ngrid.duke.console.{TuiSwing => TS}
 
 object TuiSwing {
   def main(args: Array[String]): Unit = {
-    val tui = new TuiSwing()
+    val tui = new TS()
     tui.observer = x => tui.appendText(x + "\n")
   }
 }
